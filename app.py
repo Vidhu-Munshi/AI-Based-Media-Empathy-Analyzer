@@ -89,44 +89,152 @@ def clean_dialogue_text(text: str) -> str:
 def parse_screenplay(file_path: str) -> pd.DataFrame:
     movie_name = os.path.basename(file_path).split('.')[0]
     extracted_data = []
-    current_scene, current_character = "UNKNOWN_SCENE", None
-    current_dialogue_block = []
-
+    
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        lines = f.readlines()
+        content = f.read()
 
-    for line in lines:
-        line = line.strip()
-        if not line:
+    raw_lines = content.splitlines()
+    cleaned_lines = []
+    for line in raw_lines:
+        stripped = line.strip()
+        cleaned_lines.append((line, stripped))
+
+    # Check if the file is in QUOTED_CSV format ("number" "CHARACTER" "dialogue")
+    quoted_csv_score = 0
+    total_lines_checked = 0
+    for orig, stripped in cleaned_lines[:15]:
+        if not stripped: continue
+        if re.match(r'^\s*"\d+"\s+"[^"]+"\s+".*"', stripped):
+            quoted_csv_score += 1
+        total_lines_checked += 1
+    
+    is_quoted_csv = (total_lines_checked > 0 and quoted_csv_score / total_lines_checked >= 0.5)
+
+    if is_quoted_csv:
+        current_scene = "UNKNOWN_SCENE"
+        for orig, stripped in cleaned_lines:
+            match = re.match(r'^\s*"\d+"\s+"([^"]+)"\s+"(.*)"\s*$', stripped)
+            if match:
+                char_name = match.group(1).strip()
+                dialogue_text = match.group(2).strip()
+                extracted_data.append({
+                    'Movie': movie_name,
+                    'Scene': current_scene,
+                    'Character': char_name,
+                    'Dialogue': dialogue_text
+                })
+    else:
+        filtered_lines = []
+        for orig, stripped in cleaned_lines:
+            if not stripped:
+                filtered_lines.append(("", ""))
+                continue
+            if is_page_number_or_copyright(stripped):
+                continue
+            filtered_lines.append((orig, stripped))
+
+        # Auto-detect if it's SAME_LINE_ALL_CAPS format (like simple script logs)
+        blocks = []
+        current_block = []
+        for orig, stripped in filtered_lines:
+            if not stripped:
+                if current_block:
+                    blocks.append(current_block)
+                    current_block = []
+            else:
+                current_block.append((orig, stripped))
+        if current_block:
+            blocks.append(current_block)
+
+        same_line_caps_score = 0
+        total_blocks_checked = 0
+        for block in blocks[:10]:
+            if not block: continue
+            first_line_orig, first_line_stripped = block[0]
+            match = re.match(r'^([A-Z]{2,15})\b\s+(.+)$', first_line_stripped)
+            if match:
+                same_line_caps_score += 1
+            total_blocks_checked += 1
+
+        is_same_line_all_caps = (total_blocks_checked > 0 and same_line_caps_score / total_blocks_checked >= 0.7)
+
+        if is_same_line_all_caps:
+            current_scene = "UNKNOWN_SCENE"
+            for block in blocks:
+                if not block: continue
+                first_line_orig, first_line_stripped = block[0]
+                
+                if re.match(r'^(?:INT\.|EXT\.|INT/EXT\.|INT |EXT |I/E ).*', first_line_stripped, re.IGNORECASE):
+                    current_scene = first_line_stripped
+                    continue
+                    
+                match = re.match(r'^([A-Z]{2,15})\b\s*(.*)$', first_line_stripped)
+                if match:
+                    char_name = match.group(1)
+                    dialogue_parts = [match.group(2)]
+                    for orig, stripped in block[1:]:
+                        dialogue_parts.append(stripped)
+                    dialogue_text = " ".join([p for p in dialogue_parts if p])
+                    if dialogue_text.strip():
+                        extracted_data.append({
+                            'Movie': movie_name,
+                            'Scene': current_scene,
+                            'Character': char_name,
+                            'Dialogue': dialogue_text
+                        })
+        else:
+            # Standard screenplay parser (handles both mixed-case and standard all-caps screenplays)
+            current_scene = "UNKNOWN_SCENE"
+            current_character = None
+            current_dialogue_block = []
+
+            for orig, stripped in filtered_lines:
+                if not stripped:
+                    if current_character and current_dialogue_block:
+                        extracted_data.append({
+                            'Movie': movie_name,
+                            'Scene': current_scene,
+                            'Character': current_character,
+                            'Dialogue': " ".join(current_dialogue_block)
+                        })
+                        current_dialogue_block = []
+                    current_character = None
+                    continue
+
+                # Scene Headings
+                if re.match(r'^(?:INT\.|EXT\.|INT/EXT\.|INT |EXT |I/E ).*', stripped, re.IGNORECASE):
+                    current_scene = stripped
+                    current_character = None
+                    continue
+
+                # Transitions
+                if re.match(r'.*(?:CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)$', stripped, re.IGNORECASE):
+                    current_character = None
+                    continue
+
+                # Detect Character Names
+                is_upper = stripped.isupper() and not re.search(r'[a-z]', stripped)
+                words = stripped.split()
+                has_sentence_punct = any(char in stripped for char in ['?', '!', ',']) or (stripped.endswith('.') and not any(stripped.endswith(abbr) for abbr in ['V.O.', 'O.S.', 'CONT\'D.', 'CONTD.']))
+                is_char_name = is_upper and len(words) <= 4 and not has_sentence_punct
+                
+                if is_char_name:
+                    cleaned_char = clean_character_name(stripped)
+                    if len(cleaned_char) > 1:
+                        current_character = cleaned_char
+                    continue
+
+                if current_character:
+                    current_dialogue_block.append(stripped)
+
+            # Catch trailing dialogue
             if current_character and current_dialogue_block:
                 extracted_data.append({
-                    'Movie': movie_name, 'Scene': current_scene,
-                    'Character': current_character, 'Dialogue': " ".join(current_dialogue_block)
+                    'Movie': movie_name,
+                    'Scene': current_scene,
+                    'Character': current_character,
+                    'Dialogue': " ".join(current_dialogue_block)
                 })
-                current_dialogue_block = []
-            current_character = None
-            continue
-
-        if is_page_number_or_copyright(line): continue
-        if re.match(r'^(?:INT\.|EXT\.|INT/EXT\.|INT |EXT |I/E ).*', line, re.IGNORECASE):
-            current_scene, current_character = line, None
-            continue
-        if re.match(r'.*(?:CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)$', line):
-            current_character = None
-            continue
-        if line.isupper() and not re.search(r'[a-z]', line):
-            char_name = clean_character_name(line)
-            if len(char_name) > 1: current_character = char_name
-            continue
-        
-        if current_character:
-            current_dialogue_block.append(line)
-
-    if current_character and current_dialogue_block:
-        extracted_data.append({
-            'Movie': movie_name, 'Scene': current_scene,
-            'Character': current_character, 'Dialogue': " ".join(current_dialogue_block)
-        })
 
     df = pd.DataFrame(extracted_data)
     if not df.empty:
