@@ -1,4 +1,4 @@
-🎬 AI-Based Media Empathy Analyzer
+##🎬 AI-Based Media Empathy Analyzer
 ===================================
 
 An NLP-powered Streamlit dashboard that analyzes movie screenplays to measure how empathetic, inclusive, and emotionally nuanced character dialogue is.
@@ -6,7 +6,7 @@ An NLP-powered Streamlit dashboard that analyzes movie screenplays to measure ho
 Upload a `.txt` screenplay and the app runs a 4-step ML pipeline that extracts dialogue, profiles sentiment & emotion, computes communication-style features, and scores each line for inclusivity and empathy using zero-shot classification.
 
 
-✨ Features
+##✨ Features
 ----------
 
 1. Screenplay Parsing
@@ -27,7 +27,7 @@ Upload a `.txt` screenplay and the app runs a 4-step ML pipeline that extracts d
    - Powered by BART-Large MNLI.
 
 
-Dashboard Tabs
+#Dashboard Tabs
 --------------
 
 - Tab 1: Emotional Landscape
@@ -40,7 +40,7 @@ Dashboard Tabs
   Net empathy scores and dominant interpersonal traits.
 
 
-🚀 Getting Started
+##🚀 Getting Started
 ------------------
 
 Prerequisites:
@@ -62,7 +62,7 @@ Run the App:
    streamlit run app.py
 
 
-📂 Project Structure
+##📂 Project Structure
 --------------------
 
 ├── app.py                          # Streamlit dashboard (main entry point)
@@ -85,7 +85,7 @@ Run the App:
 └── SW_EpisodeVI.txt                # Star Wars: Return of the Jedi
 
 
-🛠️ Tech Stack
+##🛠️ Tech Stack
 -------------
 
 - Frontend: Streamlit
