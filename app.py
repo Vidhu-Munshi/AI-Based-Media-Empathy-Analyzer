@@ -4,6 +4,18 @@ import tempfile
 import warnings
 from typing import List, Dict, Optional
 
+# Set local cache directories
+project_root = os.path.abspath(os.path.dirname(__file__))
+hf_cache_dir = os.path.join(project_root, "cache", "huggingface")
+nltk_cache_dir = os.path.join(project_root, "cache", "nltk")
+
+os.environ["HF_HOME"] = hf_cache_dir
+
+EMOTION_MODEL_NAME = "j-hartmann/emotion-english-distilroberta-base"
+ZERO_SHOT_MODEL_NAME = "facebook/bart-large-mnli"
+LOCAL_EMOTION_MODEL_DIR = os.path.join(hf_cache_dir, "j-hartmann_emotion_english_distilroberta_base")
+LOCAL_ZERO_SHOT_MODEL_DIR = os.path.join(hf_cache_dir, "facebook_bart_large_mnli")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -11,6 +23,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 import nltk
+# Prioritize local nltk cache directory
+os.makedirs(nltk_cache_dir, exist_ok=True)
+nltk.data.path.insert(0, nltk_cache_dir)
+
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize, sent_tokenize
 import importlib
@@ -26,8 +42,23 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="Media Empathy Analyzer", layout="wide")
 
 @st.cache_resource(show_spinner="Loading ML Models into memory (this happens once)...")
+def ensure_local_hf_model(model_name: str, local_dir: str):
+    """Download and save a HuggingFace model locally for offline reuse."""
+    if os.path.isdir(local_dir) and os.path.exists(os.path.join(local_dir, "config.json")) and any(
+        os.path.exists(os.path.join(local_dir, fname)) for fname in ["pytorch_model.bin", "model.safetensors"]
+    ):
+        return local_dir
+
+    os.makedirs(local_dir, exist_ok=True)
+    tokenizer = _transformers.AutoTokenizer.from_pretrained(model_name, cache_dir=hf_cache_dir, use_fast=True)
+    model = _transformers.AutoModelForSequenceClassification.from_pretrained(model_name, cache_dir=hf_cache_dir)
+    tokenizer.save_pretrained(local_dir)
+    model.save_pretrained(local_dir)
+    return local_dir
+
+
 def load_models():
-    """Downloads NLTK resources and caches HuggingFace pipelines."""
+    """Downloads NLTK resources and loads HuggingFace pipelines from local cached directories."""
     # NLTK setup
     for resource in ['vader_lexicon', 'punkt', 'punkt_tab']:
         try:
@@ -36,17 +67,20 @@ def load_models():
             else:
                 nltk.data.find(f'tokenizers/{resource}')
         except LookupError:
-            nltk.download(resource, quiet=True)
+            nltk.download(resource, download_dir=nltk_cache_dir, quiet=True)
             
     sia = SentimentIntensityAnalyzer()
     
     # Device configuration (GPU if available)
     device = 0 if torch.cuda.is_available() else -1
+
+    emotion_dir = ensure_local_hf_model(EMOTION_MODEL_NAME, LOCAL_EMOTION_MODEL_DIR)
+    zero_shot_dir = ensure_local_hf_model(ZERO_SHOT_MODEL_NAME, LOCAL_ZERO_SHOT_MODEL_DIR)
     
-    # HuggingFace Pipelines
     emotion_clf = pipeline(
         "text-classification", 
-        model="j-hartmann/emotion-english-distilroberta-base", 
+        model=emotion_dir,
+        tokenizer=emotion_dir,
         device=device,
         truncation=True,
         max_length=512
@@ -54,7 +88,8 @@ def load_models():
     
     zero_shot_clf = pipeline(
         "zero-shot-classification", 
-        model="facebook/bart-large-mnli", 
+        model=zero_shot_dir,
+        tokenizer=zero_shot_dir,
         device=device
     )
     

@@ -67,22 +67,28 @@ Run the App:
 
 ├── app.py                          # Streamlit dashboard (main entry point)
 ├── README.txt                      # This project documentation file
-├── README.md                       # Markdown version of project documentation
 ├── .gitignore                      # Git ignore file
-├── 01_Data_Preprocessing.ipynb     # Notebook: screenplay parsing & cleaning
-├── 02_Sentiment_Emotion.ipynb      # Notebook: VADER + emotion classification
-├── 03_Lexical_Features.ipynb       # Notebook: communication-style features
-├── 04_Inclusivity_Scoring.ipynb    # Notebook: zero-shot empathy scoring
-├── data/
-│   └── processed/                  # Pre-computed CSVs from notebook runs
-├── wordcloud_masks/                # Mask images for word cloud generation
-├── .streamlit/
-│   └── config.toml                 # Streamlit server configuration
-├── AI_Sample_Screenplay.txt        # Sample screenplay for testing
-├── AMERICAN_PSYCHO.txt             # American Psycho screenplay
-├── SW_EpisodeIV.txt                # Star Wars: A New Hope
-├── SW_EpisodeV.txt                 # Star Wars: The Empire Strikes Back
-└── SW_EpisodeVI.txt                # Star Wars: Return of the Jedi
+├── model/                          # Notebook-based preprocessing and analysis
+│   ├── 01_Data_Preprocessing.ipynb
+│   ├── 02_Sentiment_Emotion.ipynb
+│   ├── 03_Lexical_Features.ipynb
+│   └── 04_Inclusivity_Scoring.ipynb
+├── data/                          # Processed CSV outputs from notebook runs
+│   └── processed/
+├── data for tranning/             # Raw screenplay source files used for training/testing
+│   ├── AMERICAN_PSYCHO.txt
+│   ├── SW_EpisodeIV.txt
+│   ├── SW_EpisodeV.txt
+│   └── SW_EpisodeVI.txt
+├── testing/                       # Extra screenplay samples and test files
+│   ├── AI_Sample_Screenplay.txt
+│   ├── Ishaan_Script_Extracted.txt
+│   └── Original_All_Caps_Dialogue_Script.txt
+├── cache/                         # Local model and tokenizer cache directories
+│   └── huggingface/
+├── wordcloud_masks/               # Mask images for word cloud generation
+└── .streamlit/
+    └── config.toml                # Streamlit server configuration
 
 
 ##🛠️ Tech Stack

@@ -37,3 +37,6 @@ wordcloud_masks/
 
 WhatsApp Image 2026-07-07 at 10.13.54 PM.jpeg
 WhatsApp Image 2026-07-07 at 10.13.53 PM.jpeg
+
+# Model and library cache directory
+cache/
