@@ -1,0 +1,9 @@
+[server]
+# Transformers lazily exposes hundreds of optional vision modules. Streamlit's
+# module watcher probes them all and produces misleading torchvision errors,
+# even though this app only uses text models. Disable hot-reload watching to
+# keep the terminal quiet and responsive.
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false

@@ -1,0 +1,6 @@
+ cd "C:\Users\vidhu\Desktop\AI-Based-Media-Empathy-Analyzer"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install streamlit pandas numpy matplotlib seaborn nltk transformers torch
+python -m streamlit run app.py

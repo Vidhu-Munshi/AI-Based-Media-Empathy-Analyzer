@@ -1,0 +1,48 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Agents / AI config (not relevant to the project)
+.agents/
+.claude/
+.gemini/
+
+# WhatsApp images
+WhatsApp Image*
+
+# Wordcloud masks folder
+wordcloud_masks/
+
+WhatsApp Image 2026-07-07 at 10.13.54 PM.jpeg
+WhatsApp Image 2026-07-07 at 10.13.53 PM.jpeg
+
+# Model and library cache directory
+cache/
+
+# Local API credentials
+.streamlit/secrets.toml
+
+.pytest_cache/
+decisions.md
